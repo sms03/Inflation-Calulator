@@ -7,17 +7,17 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import seaborn as sns
 import pandas as pd
 
-# Set DPI awareness to prevent scaling issues on Windows
+
 try:
     ctypes.windll.shcore.SetProcessDpiAwareness(1)
 except Exception:
     pass
 
-# Configure CustomTkinter appearance
+
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("green")
 
-# Function to calculate inflation
+
 def calculate_inflation(*args):
     try:
         old_price = float(old_price_entry.get())
@@ -31,25 +31,25 @@ def calculate_inflation(*args):
             messagebox.showerror("Invalid Input", "New year must be greater than old year.")
             return
 
-        old_price_converted = old_price * conversion_rate  # This step is only needed if conversion rate is for currency
+        old_price_converted = old_price * conversion_rate
         
-        # Inflation rate calculation (check for price decrease)
+
         inflation_rate_total = ((new_price - old_price_converted) / old_price_converted) * 100
-        # Annual inflation calculation (compounding effect)
+
         if years_difference > 0:
             average_annual_inflation = (((new_price / old_price_converted) ** (1 / years_difference)) - 1) * 100
         else:
             average_annual_inflation = 0
 
-        # Ensure that the inflation rate and annual inflation are rounded
+
         inflation_rate_total = round(inflation_rate_total, 2)
         average_annual_inflation = round(average_annual_inflation, 2)
 
-        # Check for negative inflation and adjust accordingly (avoid display issues)
+
         if inflation_rate_total < 0:
-            inflation_rate_total = abs(inflation_rate_total)  # Display as positive if it's negative (deflation)
+            inflation_rate_total = abs(inflation_rate_total)
         if average_annual_inflation < 0:
-            average_annual_inflation = abs(average_annual_inflation)  # Display as positive
+            average_annual_inflation = abs(average_annual_inflation)
 
         display_result(inflation_rate_total, average_annual_inflation, old_price, new_price, old_year, new_year, old_price_converted)
     except ValueError:
@@ -59,7 +59,7 @@ def calculate_inflation(*args):
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
 
-# Display result and draw chart based on selected chart type
+
 def display_result(inflation_rate_total, average_annual_inflation, old_price, new_price, old_year, new_year, old_price_converted):
     result_text = (f"Inflation from {old_year} to {new_year} is {inflation_rate_total:.2f}%.\n"
                    f"Average Annual Inflation Rate: {average_annual_inflation:.2f}%\n"
@@ -68,7 +68,7 @@ def display_result(inflation_rate_total, average_annual_inflation, old_price, ne
     result_text_box.delete("1.0", tk.END)
     result_text_box.insert(tk.END, result_text)
 
-    # Clear previous chart if it exists
+
     for widget in result_frame.winfo_children():
         widget.destroy()
 
@@ -123,7 +123,7 @@ root.eval('tk::PlaceWindow . center')
 input_frame = ctk.CTkFrame(root, width=700, height=250, corner_radius=10)
 input_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
 
-# Input Fields
+
 ctk.CTkLabel(input_frame, text="Old Price").grid(row=0, column=0, padx=10, pady=5, sticky="w")
 old_price_entry = ctk.CTkEntry(input_frame, width=200)
 old_price_entry.grid(row=0, column=1, padx=10, pady=5)
@@ -157,11 +157,11 @@ chart_type_menu.grid(row=6, column=1, padx=10, pady=5)
 calculate_button = ctk.CTkButton(input_frame, text="Calculate Inflation", command=calculate_inflation, fg_color="#A8DADC")
 calculate_button.grid(row=7, column=0, columnspan=2, pady=10)
 
-# Result Frame
+
 result_frame = ctk.CTkFrame(root, width=700, height=300, corner_radius=10)
 result_frame.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
 
-# Text Box for result
+
 result_text_box = tk.Text(root, wrap="word", height=5, width=80, font=("Arial", 12), bg="#F1FAEE", fg="#1D3557")
 result_text_box.grid(row=2, column=0, padx=10, pady=(5, 15))
 
