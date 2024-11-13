@@ -1,3 +1,4 @@
+import ctypes
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import messagebox
@@ -6,9 +7,17 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import seaborn as sns
 import pandas as pd
 
+# Set DPI awareness to prevent scaling issues on Windows
+try:
+    ctypes.windll.shcore.SetProcessDpiAwareness(1)
+except Exception:
+    pass
+
+# Configure CustomTkinter appearance
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("green")
 
+# Function to calculate inflation
 def calculate_inflation():
     try:
         old_price = float(old_price_entry.get())
@@ -22,11 +31,15 @@ def calculate_inflation():
             messagebox.showerror("Invalid Input", "New year must be greater than old year.")
             return
 
-        old_price_converted = old_price * conversion_rate
+        old_price_converted = old_price * conversion_rate  # This step is only needed if conversion rate is for currency
         inflation_rate_total = ((new_price - old_price_converted) / old_price_converted) * 100
         average_annual_inflation = (((new_price / old_price_converted) ** (1 / years_difference)) - 1) * 100
 
-        show_result(inflation_rate_total, average_annual_inflation, old_price_converted, new_price, old_year, new_year)
+        # Ensure that the inflation rate and annual inflation are positive when applicable
+        inflation_rate_total = round(inflation_rate_total, 2)
+        average_annual_inflation = round(average_annual_inflation, 2)
+
+        display_result(inflation_rate_total, average_annual_inflation, old_price, new_price, old_year, new_year, old_price_converted)
     except ValueError:
         messagebox.showerror("Invalid Input", "Please enter valid numbers for prices and years.")
     except ZeroDivisionError:
@@ -34,15 +47,18 @@ def calculate_inflation():
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
 
-def show_result(inflation_rate_total, average_annual_inflation, old_price, new_price, old_year, new_year):
+# Display result and draw chart based on selected chart type
+def display_result(inflation_rate_total, average_annual_inflation, old_price, new_price, old_year, new_year, old_price_converted):
     result_text = (f"Inflation from {old_year} to {new_year} is {inflation_rate_total:.2f}%.\n"
                    f"Average Annual Inflation Rate: {average_annual_inflation:.2f}%\n"
-                   f"Price increased from {old_price:.2f} to {new_price:.2f}.")
+                   f"Price increased from {old_price:.2f} to {new_price:.2f}.\n"
+                   f"Old price converted to current currency: {old_price_converted:.2f}")
     result_text_box.delete("1.0", tk.END)
     result_text_box.insert(tk.END, result_text)
 
-    if hasattr(show_result, 'canvas'):
-        show_result.canvas.get_tk_widget().destroy()
+    # Clear previous chart if it exists
+    for widget in result_frame.winfo_children():
+        widget.destroy()
 
     fig, ax = plt.subplots(figsize=(6, 3), dpi=100)
     sns.set_theme(style="whitegrid", palette="pastel")
@@ -67,24 +83,35 @@ def show_result(inflation_rate_total, average_annual_inflation, old_price, new_p
         sns.violinplot(data=inflation_over_time, ax=ax)
         ax.set_title("Violin Plot of Inflation Over Time")
         ax.set_ylabel("Inflation Growth Factor")
+    elif chart_type == "Bar Plot":
+        sns.barplot(x=years, y=inflation_over_time, ax=ax)
+        ax.set_title("Bar Plot of Inflation Growth Over Time")
+        ax.set_xlabel("Year")
+        ax.set_ylabel("Growth Factor")
+    elif chart_type == "Scatter Plot":
+        sns.scatterplot(x=years, y=inflation_over_time, ax=ax)
+        ax.set_title("Scatter Plot of Inflation Growth Over Time")
+        ax.set_xlabel("Year")
+        ax.set_ylabel("Growth Factor")
     else:
         sns.lineplot(x=years, y=inflation_over_time, ax=ax)
         ax.set_title("Inflation Growth Over Time")
         ax.set_xlabel("Year")
         ax.set_ylabel("Price Growth Factor")
 
-    show_result.canvas = FigureCanvasTkAgg(fig, master=result_frame)
-    show_result.canvas.get_tk_widget().grid(row=0, column=1, padx=10, pady=10)
-    show_result.canvas.draw()
+    chart_canvas = FigureCanvasTkAgg(fig, master=result_frame)
+    chart_canvas.get_tk_widget().pack()
+    chart_canvas.draw()
 
 root = ctk.CTk()
 root.title("Inflation Calculator")
 root.geometry("850x700")
-root.eval('tk::PlaceWindow . center')  # Center the window on the screen
+root.eval('tk::PlaceWindow . center')
 
 input_frame = ctk.CTkFrame(root, width=700, height=250, corner_radius=10)
 input_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
 
+# Input Fields
 ctk.CTkLabel(input_frame, text="Old Price").grid(row=0, column=0, padx=10, pady=5, sticky="w")
 old_price_entry = ctk.CTkEntry(input_frame, width=200)
 old_price_entry.grid(row=0, column=1, padx=10, pady=5)
@@ -112,19 +139,18 @@ currency_menu.grid(row=5, column=1, padx=10, pady=5)
 
 ctk.CTkLabel(input_frame, text="Chart Type").grid(row=6, column=0, padx=10, pady=5, sticky="w")
 chart_type_var = tk.StringVar(value="Line Chart")
-chart_type_menu = ctk.CTkOptionMenu(input_frame, variable=chart_type_var, values=["Line Chart", "Pie Chart", "Histogram", "Box Plot", "Violin Plot"])
+chart_type_menu = ctk.CTkOptionMenu(input_frame, variable=chart_type_var, values=["Line Chart", "Pie Chart", "Histogram", "Box Plot", "Violin Plot", "Bar Plot", "Scatter Plot"])
 chart_type_menu.grid(row=6, column=1, padx=10, pady=5)
 
 calculate_button = ctk.CTkButton(input_frame, text="Calculate Inflation", command=calculate_inflation, fg_color="#A8DADC")
 calculate_button.grid(row=7, column=0, columnspan=2, pady=10)
 
+# Result Frame
 result_frame = ctk.CTkFrame(root, width=700, height=300, corner_radius=10)
 result_frame.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
 
+# Text Box for result
 result_text_box = tk.Text(root, wrap="word", height=5, width=80, font=("Arial", 12), bg="#F1FAEE", fg="#1D3557")
 result_text_box.grid(row=2, column=0, padx=10, pady=(5, 15))
-
-root.grid_rowconfigure(1, weight=1)
-root.grid_columnconfigure(0, weight=1)
 
 root.mainloop()
