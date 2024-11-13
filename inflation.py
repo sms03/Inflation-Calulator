@@ -18,7 +18,7 @@ ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("green")
 
 # Function to calculate inflation
-def calculate_inflation():
+def calculate_inflation(*args):
     try:
         old_price = float(old_price_entry.get())
         new_price = float(new_price_entry.get())
