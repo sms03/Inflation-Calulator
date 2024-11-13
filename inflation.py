@@ -32,12 +32,24 @@ def calculate_inflation(*args):
             return
 
         old_price_converted = old_price * conversion_rate  # This step is only needed if conversion rate is for currency
+        
+        # Inflation rate calculation (check for price decrease)
         inflation_rate_total = ((new_price - old_price_converted) / old_price_converted) * 100
-        average_annual_inflation = (((new_price / old_price_converted) ** (1 / years_difference)) - 1) * 100
+        # Annual inflation calculation (compounding effect)
+        if years_difference > 0:
+            average_annual_inflation = (((new_price / old_price_converted) ** (1 / years_difference)) - 1) * 100
+        else:
+            average_annual_inflation = 0
 
-        # Ensure that the inflation rate and annual inflation are positive when applicable
+        # Ensure that the inflation rate and annual inflation are rounded
         inflation_rate_total = round(inflation_rate_total, 2)
         average_annual_inflation = round(average_annual_inflation, 2)
+
+        # Check for negative inflation and adjust accordingly (avoid display issues)
+        if inflation_rate_total < 0:
+            inflation_rate_total = abs(inflation_rate_total)  # Display as positive if it's negative (deflation)
+        if average_annual_inflation < 0:
+            average_annual_inflation = abs(average_annual_inflation)  # Display as positive
 
         display_result(inflation_rate_total, average_annual_inflation, old_price, new_price, old_year, new_year, old_price_converted)
     except ValueError:
